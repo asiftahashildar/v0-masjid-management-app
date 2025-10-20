@@ -35,7 +35,7 @@ export default function UserChandaSection() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="p-4 bg-neutral-light rounded-lg">
             <p className="text-sm text-neutral-dark/60">This Week's Total</p>
-            <p className="text-2xl font-bold text-accent mt-2">${totalChanda}</p>
+            <p className="text-2xl font-bold text-accent mt-2">₹{totalChanda}</p>
           </div>
           <div className="p-4 bg-neutral-light rounded-lg">
             <p className="text-sm text-neutral-dark/60">Contributors</p>
@@ -44,7 +44,7 @@ export default function UserChandaSection() {
           <div className="p-4 bg-neutral-light rounded-lg">
             <p className="text-sm text-neutral-dark/60">Average Contribution</p>
             <p className="text-2xl font-bold text-success mt-2">
-              ${contributors.length > 0 ? (totalChanda / contributors.length).toFixed(2) : 0}
+              ₹{contributors.length > 0 ? (totalChanda / contributors.length).toFixed(2) : 0}
             </p>
           </div>
         </div>
@@ -59,7 +59,7 @@ export default function UserChandaSection() {
                 <p className="font-medium text-neutral-dark">{contributor.name}</p>
                 <p className="text-sm text-neutral-dark/60">{contributor.date}</p>
               </div>
-              <span className="text-lg font-bold text-accent">${contributor.amount}</span>
+              <span className="text-lg font-bold text-accent">₹{contributor.amount}</span>
             </div>
           ))}
         </div>

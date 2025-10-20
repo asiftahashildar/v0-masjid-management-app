@@ -42,6 +42,13 @@ export const chandaAPI = {
   deleteContributor: (id: number) => apiCall(`/chanda/contributors/${id}`, "DELETE"),
 }
 
+// Jumma Chanda API
+export const jummaAPI = {
+  getJummaChanda: () => apiCall<any[]>("/chanda/jumma"),
+  addJummaChanda: (data: any) => apiCall("/chanda/jumma", "POST", data),
+  deleteJummaChanda: (id: number) => apiCall(`/chanda/jumma/${id}`, "DELETE"),
+}
+
 // Assets API
 export const assetsAPI = {
   getAssets: () => apiCall<any[]>("/assets"),

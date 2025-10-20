@@ -1,11 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
 
 let timings = {
-  fajr: "5:30 AM",
-  dhuhr: "1:15 PM",
-  asr: "4:45 PM",
-  maghrib: "7:00 PM",
-  isha: "8:30 PM",
+  fajr: "",
+  dhuhr: "",
+  asr: "",
+  maghrib: "",
+  isha: "",
 }
 
 export async function GET() {

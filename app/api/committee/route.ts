@@ -1,9 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
 
 let committee = {
-  leader: "Sheikh Muhammad Hassan",
-  accountant: "Ahmed Khan",
-  members: ["Fatima Khan", "Hassan Ibrahim", "Aisha Ahmed"],
+  leader: "",
+  accountant: "",
+  members: [],
 }
 
 export async function GET() {

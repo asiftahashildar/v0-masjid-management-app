@@ -1,18 +1,18 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-const expenses: any[] = []
+const jummaChanda: any[] = []
 
 export async function GET() {
-  return NextResponse.json(expenses)
+  return NextResponse.json(jummaChanda)
 }
 
 export async function POST(request: NextRequest) {
   const data = await request.json()
-  const newExpense = {
-    id: Math.max(...expenses.map((e) => e.id), 0) + 1,
+  const newJummaChanda = {
+    id: Math.max(...jummaChanda.map((j) => j.id), 0) + 1,
     ...data,
     date: new Date().toISOString().split("T")[0],
   }
-  expenses.push(newExpense)
-  return NextResponse.json(newExpense, { status: 201 })
+  jummaChanda.push(newJummaChanda)
+  return NextResponse.json(newJummaChanda, { status: 201 })
 }

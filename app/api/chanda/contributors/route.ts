@@ -1,11 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-const contributors = [
-  { id: 1, name: "Ahmed Hassan", amount: 50, date: "2025-10-18" },
-  { id: 2, name: "Muhammad Ali", amount: 75, date: "2025-10-18" },
-  { id: 3, name: "Fatima Khan", amount: 40, date: "2025-10-18" },
-  { id: 4, name: "Hassan Ibrahim", amount: 60, date: "2025-10-18" },
-]
+const contributors: any[] = []
 
 export async function GET() {
   return NextResponse.json(contributors)
