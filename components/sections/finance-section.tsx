@@ -1,35 +1,69 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { financeAPI } from "@/lib/api-client"
 
 export default function FinanceSection() {
-  const [expenses, setExpenses] = useState([
-    { id: 1, category: "Utilities", amount: 450, date: "2025-10-15" },
-    { id: 2, category: "Maintenance", amount: 300, date: "2025-10-10" },
-    { id: 3, category: "Food Supplies", amount: 640, date: "2025-10-05" },
-  ])
+  const [expenses, setExpenses] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
 
   const [newExpense, setNewExpense] = useState({
     category: "",
     amount: "",
   })
 
-  const handleAddExpense = () => {
-    if (newExpense.category && newExpense.amount) {
-      setExpenses([
-        ...expenses,
-        {
-          id: expenses.length + 1,
-          category: newExpense.category,
-          amount: Number.parseFloat(newExpense.amount),
-          date: new Date().toISOString().split("T")[0],
-        },
-      ])
-      setNewExpense({ category: "", amount: "" })
+  useEffect(() => {
+    loadExpenses()
+  }, [])
+
+  const loadExpenses = async () => {
+    try {
+      setLoading(true)
+      const data = await financeAPI.getExpenses()
+      setExpenses(data)
+      setError("")
+    } catch (err) {
+      setError("Failed to load expenses")
+      console.error(err)
+    } finally {
+      setLoading(false)
     }
   }
+
+  const handleAddExpense = async () => {
+    if (!newExpense.category || !newExpense.amount) {
+      setError("Please fill in all fields")
+      return
+    }
+
+    try {
+      await financeAPI.addExpense({
+        category: newExpense.category,
+        amount: Number.parseFloat(newExpense.amount),
+      })
+      setNewExpense({ category: "", amount: "" })
+      await loadExpenses()
+      setError("")
+    } catch (err) {
+      setError("Failed to add expense")
+      console.error(err)
+    }
+  }
+
+  const handleDeleteExpense = async (id: number) => {
+    try {
+      await financeAPI.deleteExpense(id)
+      await loadExpenses()
+    } catch (err) {
+      setError("Failed to delete expense")
+      console.error(err)
+    }
+  }
+
+  if (loading) return <div className="text-center py-8">Loading...</div>
 
   return (
     <div className="space-y-6">
@@ -42,7 +76,7 @@ export default function FinanceSection() {
 
         <Card className="p-6">
           <p className="text-neutral-dark/60 text-sm font-medium">Monthly Expenses</p>
-          <p className="text-3xl font-bold text-warning mt-2">$1,390</p>
+          <p className="text-3xl font-bold text-warning mt-2">${expenses.reduce((sum, e) => sum + e.amount, 0)}</p>
           <p className="text-xs text-neutral-dark/50 mt-2">October 2025</p>
         </Card>
 
@@ -52,6 +86,8 @@ export default function FinanceSection() {
           <p className="text-xs text-neutral-dark/50 mt-2">Due on Nov 1</p>
         </Card>
       </div>
+
+      {error && <div className="bg-red-100 text-red-700 p-4 rounded-lg">{error}</div>}
 
       <Card className="p-6">
         <h3 className="text-lg font-semibold text-neutral-dark mb-6">Add New Expense</h3>
@@ -88,6 +124,7 @@ export default function FinanceSection() {
                 <th className="text-left py-3 px-4 font-semibold text-neutral-dark">Category</th>
                 <th className="text-left py-3 px-4 font-semibold text-neutral-dark">Amount</th>
                 <th className="text-left py-3 px-4 font-semibold text-neutral-dark">Date</th>
+                <th className="text-left py-3 px-4 font-semibold text-neutral-dark">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -96,6 +133,14 @@ export default function FinanceSection() {
                   <td className="py-3 px-4 text-neutral-dark">{expense.category}</td>
                   <td className="py-3 px-4 font-semibold text-neutral-dark">${expense.amount}</td>
                   <td className="py-3 px-4 text-neutral-dark/60">{expense.date}</td>
+                  <td className="py-3 px-4">
+                    <button
+                      onClick={() => handleDeleteExpense(expense.id)}
+                      className="text-error hover:text-red-700 text-sm font-medium"
+                    >
+                      Delete
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

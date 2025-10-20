@@ -1,36 +1,69 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { chandaAPI } from "@/lib/api-client"
 
 export default function ChandaSection() {
-  const [contributors, setContributors] = useState([
-    { id: 1, name: "Ahmed Hassan", amount: 50, date: "2025-10-18" },
-    { id: 2, name: "Muhammad Ali", amount: 75, date: "2025-10-18" },
-    { id: 3, name: "Fatima Khan", amount: 40, date: "2025-10-18" },
-    { id: 4, name: "Hassan Ibrahim", amount: 60, date: "2025-10-18" },
-  ])
+  const [contributors, setContributors] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
 
   const [newContributor, setNewContributor] = useState({
     name: "",
     amount: "",
   })
 
-  const handleAddContributor = () => {
-    if (newContributor.name && newContributor.amount) {
-      setContributors([
-        ...contributors,
-        {
-          id: contributors.length + 1,
-          name: newContributor.name,
-          amount: Number.parseFloat(newContributor.amount),
-          date: new Date().toISOString().split("T")[0],
-        },
-      ])
-      setNewContributor({ name: "", amount: "" })
+  useEffect(() => {
+    loadContributors()
+  }, [])
+
+  const loadContributors = async () => {
+    try {
+      setLoading(true)
+      const data = await chandaAPI.getContributors()
+      setContributors(data)
+      setError("")
+    } catch (err) {
+      setError("Failed to load contributors")
+      console.error(err)
+    } finally {
+      setLoading(false)
     }
   }
+
+  const handleAddContributor = async () => {
+    if (!newContributor.name || !newContributor.amount) {
+      setError("Please fill in all fields")
+      return
+    }
+
+    try {
+      await chandaAPI.addContributor({
+        name: newContributor.name,
+        amount: Number.parseFloat(newContributor.amount),
+      })
+      setNewContributor({ name: "", amount: "" })
+      await loadContributors()
+      setError("")
+    } catch (err) {
+      setError("Failed to add contributor")
+      console.error(err)
+    }
+  }
+
+  const handleDeleteContributor = async (id: number) => {
+    try {
+      await chandaAPI.deleteContributor(id)
+      await loadContributors()
+    } catch (err) {
+      setError("Failed to delete contributor")
+      console.error(err)
+    }
+  }
+
+  if (loading) return <div className="text-center py-8">Loading...</div>
 
   const totalChanda = contributors.reduce((sum, c) => sum + c.amount, 0)
 
@@ -55,6 +88,8 @@ export default function ChandaSection() {
           <p className="text-xs text-neutral-dark/50 mt-2">2025</p>
         </Card>
       </div>
+
+      {error && <div className="bg-red-100 text-red-700 p-4 rounded-lg">{error}</div>}
 
       <Card className="p-6">
         <h3 className="text-lg font-semibold text-neutral-dark mb-6">Record Chanda Contribution</h3>
@@ -91,6 +126,7 @@ export default function ChandaSection() {
                 <th className="text-left py-3 px-4 font-semibold text-neutral-dark">Name</th>
                 <th className="text-left py-3 px-4 font-semibold text-neutral-dark">Amount</th>
                 <th className="text-left py-3 px-4 font-semibold text-neutral-dark">Date</th>
+                <th className="text-left py-3 px-4 font-semibold text-neutral-dark">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -99,6 +135,14 @@ export default function ChandaSection() {
                   <td className="py-3 px-4 text-neutral-dark">{contributor.name}</td>
                   <td className="py-3 px-4 font-semibold text-accent">${contributor.amount}</td>
                   <td className="py-3 px-4 text-neutral-dark/60">{contributor.date}</td>
+                  <td className="py-3 px-4">
+                    <button
+                      onClick={() => handleDeleteContributor(contributor.id)}
+                      className="text-error hover:text-red-700 text-sm font-medium"
+                    >
+                      Delete
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

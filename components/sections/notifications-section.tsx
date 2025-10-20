@@ -1,67 +1,75 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { notificationsAPI } from "@/lib/api-client"
 
 export default function NotificationsSection() {
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: "Jummah Prayer Reminder",
-      message: "Jummah prayer starts at 1:30 PM tomorrow",
-      date: "2025-10-18",
-    },
-    {
-      id: 2,
-      title: "Chanda Collection",
-      message: "Weekly chanda collection this Friday",
-      date: "2025-10-17",
-    },
-    {
-      id: 3,
-      title: "Maintenance Notice",
-      message: "Masjid maintenance scheduled for next week",
-      date: "2025-10-16",
-    },
-  ])
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
 
   const [newNotification, setNewNotification] = useState({
-    title: "",
     message: "",
   })
 
-  const handleAddNotification = () => {
-    if (newNotification.title && newNotification.message) {
-      setNotifications([
-        ...notifications,
-        {
-          id: notifications.length + 1,
-          title: newNotification.title,
-          message: newNotification.message,
-          date: new Date().toISOString().split("T")[0],
-        },
-      ])
-      setNewNotification({ title: "", message: "" })
+  useEffect(() => {
+    loadNotifications()
+  }, [])
+
+  const loadNotifications = async () => {
+    try {
+      setLoading(true)
+      const data = await notificationsAPI.getNotifications()
+      setNotifications(data)
+      setError("")
+    } catch (err) {
+      setError("Failed to load notifications")
+      console.error(err)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const handleDeleteNotification = (id: number) => {
-    setNotifications(notifications.filter((notif) => notif.id !== id))
+  const handleAddNotification = async () => {
+    if (!newNotification.message) {
+      setError("Please enter a message")
+      return
+    }
+
+    try {
+      await notificationsAPI.addNotification({
+        message: newNotification.message,
+      })
+      setNewNotification({ message: "" })
+      await loadNotifications()
+      setError("")
+    } catch (err) {
+      setError("Failed to send notification")
+      console.error(err)
+    }
   }
+
+  const handleDeleteNotification = async (id: number) => {
+    try {
+      await notificationsAPI.deleteNotification(id)
+      await loadNotifications()
+    } catch (err) {
+      setError("Failed to delete notification")
+      console.error(err)
+    }
+  }
+
+  if (loading) return <div className="text-center py-8">Loading...</div>
 
   return (
     <div className="space-y-6">
+      {error && <div className="bg-red-100 text-red-700 p-4 rounded-lg">{error}</div>}
+
       <Card className="p-6">
         <h3 className="text-lg font-semibold text-neutral-dark mb-6">Send New Notification</h3>
         <div className="space-y-4 mb-4">
-          <input
-            type="text"
-            placeholder="Notification Title"
-            value={newNotification.title}
-            onChange={(e) => setNewNotification({ ...newNotification, title: e.target.value })}
-            className="w-full px-4 py-2 border border-neutral-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-          />
           <textarea
             placeholder="Notification Message"
             value={newNotification.message}
@@ -89,9 +97,8 @@ export default function NotificationsSection() {
           {notifications.map((notification) => (
             <div key={notification.id} className="p-4 bg-neutral-light rounded-lg flex items-start justify-between">
               <div className="flex-1">
-                <p className="font-semibold text-neutral-dark">{notification.title}</p>
-                <p className="text-sm text-neutral-dark/60 mt-1">{notification.message}</p>
-                <p className="text-xs text-neutral-dark/50 mt-2">{notification.date}</p>
+                <p className="text-sm text-neutral-dark/60 mb-1">{notification.date}</p>
+                <p className="font-semibold text-neutral-dark">{notification.message}</p>
               </div>
               <Button
                 onClick={() => handleDeleteNotification(notification.id)}
