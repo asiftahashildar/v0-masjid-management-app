@@ -1,97 +1,69 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { financeAPI, chandaAPI, jummaAPI } from "@/lib/api-client"
+import { useAppDispatch, useAppSelector } from "@/lib/hooks"
+import { addExpense, deleteExpense, setTotalBalance } from "@/lib/slices/financeSlice"
 
 export default function FinanceSection() {
-  const [expenses, setExpenses] = useState<any[]>([])
-  const [contributors, setContributors] = useState<any[]>([])
-  const [jummaChanda, setJummaChanda] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const dispatch = useAppDispatch()
+  const { expenses, totalBalance } = useAppSelector((state) => state.finance)
+  const { contributors } = useAppSelector((state) => state.chanda)
+  const { jummaChanda } = useAppSelector((state) => state.jumma)
+
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
-
-  const [totalBalance, setTotalBalance] = useState(0)
   const [editingBalance, setEditingBalance] = useState(false)
-  const [balanceInput, setBalanceInput] = useState("0")
+  const [balanceInput, setBalanceInput] = useState(totalBalance.toString())
 
   const [newExpense, setNewExpense] = useState({
     category: "",
     amount: "",
   })
 
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  const loadData = async () => {
-    try {
-      setLoading(true)
-      const [expensesData, contributorsData, jummaData] = await Promise.all([
-        financeAPI.getExpenses(),
-        chandaAPI.getContributors(),
-        jummaAPI.getJummaChanda(),
-      ])
-      setExpenses(expensesData)
-      setContributors(contributorsData)
-      setJummaChanda(jummaData)
-      setError("")
-    } catch (err) {
-      setError("Failed to load data")
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleAddExpense = async () => {
+  const handleAddExpense = () => {
     if (!newExpense.category || !newExpense.amount) {
       setError("Please fill in all fields")
       return
     }
 
     try {
-      await financeAPI.addExpense({
-        category: newExpense.category,
-        amount: Number.parseFloat(newExpense.amount),
-      })
+      dispatch(
+        addExpense({
+          category: newExpense.category,
+          amount: Number.parseFloat(newExpense.amount),
+        }),
+      )
       setNewExpense({ category: "", amount: "" })
-      await loadData()
       setError("")
       setSuccess("Expense added successfully")
       setTimeout(() => setSuccess(""), 3000)
     } catch (err) {
       setError("Failed to add expense")
-      console.error(err)
     }
   }
 
-  const handleDeleteExpense = async (id: number) => {
+  const handleDeleteExpense = (id: number) => {
     try {
-      await financeAPI.deleteExpense(id)
-      await loadData()
+      dispatch(deleteExpense(id))
       setSuccess("Expense deleted successfully")
       setTimeout(() => setSuccess(""), 3000)
     } catch (err) {
       setError("Failed to delete expense")
-      console.error(err)
     }
   }
 
-  const handleUpdateBalance = async () => {
+  const handleUpdateBalance = () => {
     if (!balanceInput || isNaN(Number.parseFloat(balanceInput))) {
       setError("Please enter a valid amount")
       return
     }
-    setTotalBalance(Number.parseFloat(balanceInput))
+    dispatch(setTotalBalance(Number.parseFloat(balanceInput)))
     setEditingBalance(false)
     setSuccess("Account balance updated successfully")
     setTimeout(() => setSuccess(""), 3000)
   }
-
-  if (loading) return <div className="text-center py-8">Loading...</div>
 
   const totalChanda = contributors.reduce((sum, c) => sum + c.amount, 0)
   const totalJummaChanda = jummaChanda.reduce((sum, j) => sum + j.amount, 0)

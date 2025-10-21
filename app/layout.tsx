@@ -1,6 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
+import { ReduxProvider } from "@/lib/redux-provider"
 import "./globals.css"
 
 const geistSans = Geist({ subsets: ["latin"] })
@@ -9,7 +10,7 @@ const geistMono = Geist_Mono({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "Jamia Masjid Management",
   description: "Manage your Masjid accounts, chanda, and assets",
-    generator: 'v0.app'
+  generator: "v0.app",
 }
 
 export default function RootLayout({
@@ -19,7 +20,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.className} bg-background text-foreground`}>{children}</body>
+      <body className={`${geistSans.className} bg-background text-foreground`}>
+        <ReduxProvider>{children}</ReduxProvider>
+      </body>
     </html>
   )
 }
