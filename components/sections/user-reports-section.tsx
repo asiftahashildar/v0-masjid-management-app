@@ -1,53 +1,33 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
-import { financeAPI, chandaAPI, assetsAPI, jummaAPI } from "@/lib/api-client"
+import { useAppSelector } from "@/lib/hooks"
 
 export default function UserReportsSection() {
-  const [expenses, setExpenses] = useState<any[]>([])
-  const [contributors, setContributors] = useState<any[]>([])
-  const [jummaChanda, setJummaChanda] = useState<any[]>([])
-  const [assets, setAssets] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  // 🔹 Pull all data from Redux
+  const finance = useAppSelector((state) => state.finance)
+  const chanda = useAppSelector((state) => state.chanda)
+  const assets = useAppSelector((state) => state.assets)
+  const jumma = useAppSelector((state) => state.jumma)
 
-  useEffect(() => {
-    loadReportData()
-  }, [])
+  // 🔹 Extract main lists
+  const expenses = finance.expenses || []
+  const contributors = chanda.contributors || []
+  const jummaChanda = jumma.jummaChanda || []
+  const assetsList = assets.assets || []
 
-  const loadReportData = async () => {
-    try {
-      setLoading(true)
-      const [expensesData, contributorsData, assetsData, jummaData] = await Promise.all([
-        financeAPI.getExpenses(),
-        chandaAPI.getContributors(),
-        assetsAPI.getAssets(),
-        jummaAPI.getJummaChanda(),
-      ])
-      setExpenses(expensesData)
-      setContributors(contributorsData)
-      setAssets(assetsData)
-      setJummaChanda(jummaData)
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (loading) return <div className="text-center py-8">Loading...</div>
-
+  // 🔹 Calculations
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
   const totalChanda = contributors.reduce((sum, c) => sum + c.amount, 0)
   const totalJummaChanda = jummaChanda.reduce((sum, j) => sum + j.amount, 0)
-  const balance = 0 + totalChanda + totalJummaChanda - totalExpenses
+  const balance = finance.totalBalance + totalChanda + totalJummaChanda - totalExpenses
 
   const expensesByCategory = expenses.reduce((acc: any, exp: any) => {
     acc[exp.category] = (acc[exp.category] || 0) + exp.amount
     return acc
   }, {})
 
-  const assetsByCategory = assets.reduce((acc: any, asset: any) => {
+  const assetsByCategory = assetsList.reduce((acc: any, asset: any) => {
     acc[asset.category] = (acc[asset.category] || 0) + asset.quantity
     return acc
   }, {})
@@ -84,7 +64,7 @@ export default function UserReportsSection() {
 
         <Card className="p-6">
           <p className="text-neutral-dark/60 text-sm font-medium">Total Assets</p>
-          <p className="text-3xl font-bold text-success mt-2">{assets.length}</p>
+          <p className="text-3xl font-bold text-success mt-2">{assetsList.length}</p>
           <p className="text-xs text-neutral-dark/50 mt-2">items tracked</p>
         </Card>
       </div>
@@ -157,10 +137,7 @@ export default function UserReportsSection() {
                 </tr>
               ))}
               {contributors.slice(0, 5).map((contributor) => (
-                <tr
-                  key={`chanda-${contributor.id}`}
-                  className="border-b border-neutral-light hover:bg-neutral-light/50"
-                >
+                <tr key={`chanda-${contributor.id}`} className="border-b border-neutral-light hover:bg-neutral-light/50">
                   <td className="py-3 px-4 text-neutral-dark">Chanda</td>
                   <td className="py-3 px-4 text-neutral-dark">{contributor.name}</td>
                   <td className="py-3 px-4 font-semibold text-primary">
@@ -169,14 +146,21 @@ export default function UserReportsSection() {
                   <td className="py-3 px-4 text-neutral-dark/60">{contributor.date}</td>
                 </tr>
               ))}
-              {jummaChanda.slice(0, 5).map((jumma) => (
-                <tr key={`jumma-${jumma.id}`} className="border-b border-neutral-light hover:bg-neutral-light/50">
-                  <td className="py-3 px-4 text-neutral-dark">Jumma Chanda</td>
-                  <td className="py-3 px-4 text-neutral-dark">Week {jumma.weekNumber}</td>
-                  <td className="py-3 px-4 font-semibold text-accent">+₹{jumma.amount.toLocaleString("en-IN")}</td>
-                  <td className="py-3 px-4 text-neutral-dark/60">{jumma.date}</td>
-                </tr>
-              ))}
+                {jummaChanda?.slice(0, 5).map((jumma: any) => (
+                  <tr key={`jumma-${jumma?.id || Math.random()}`} className="border-b border-neutral-light hover:bg-neutral-light/50">
+                    <td className="py-3 px-4 text-neutral-dark">Jumma Chanda</td>
+                    <td className="py-3 px-4 text-neutral-dark">
+                      Week {jumma?.weekNumber ?? jumma?.week ?? '-'}
+                    </td>
+                    <td className="py-3 px-4 font-semibold text-accent">
+                      +₹{jumma?.amount?.toLocaleString("en-IN") ?? '0'}
+                    </td>
+                    <td className="py-3 px-4 text-neutral-dark/60">
+                      {jumma?.date ?? '-'}
+                    </td>
+                  </tr>
+                ))}
+
             </tbody>
           </table>
         </div>

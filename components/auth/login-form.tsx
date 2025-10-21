@@ -42,6 +42,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
               <span className="text-white text-xl font-bold">🕌</span>
             </div>
             <h1 className="text-3xl font-bold text-neutral-dark mb-2">Jamia Masjid</h1>
+            <h3 className="text-1xl font-bold text-neutral-dark mb-2">NEJ</h3>
             <p className="text-neutral-dark/60">Management System</p>
           </div>
 
@@ -79,7 +80,6 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
                 Login as Admin
               </Button>
             </form>
-            <p className="text-xs text-neutral-dark/50 mt-2">Demo: admin / admin123</p>
           </div>
 
           {/* Divider */}
