@@ -8,7 +8,7 @@ const geistSans = Geist({ subsets: ["latin"] })
 const geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Jamia Masjid Management",
+  title: "Jamia Masjid Nej Management",
   description: "Manage your Masjid accounts, chanda, and assets",
   generator: "v0.app",
 }
