@@ -1,12 +1,21 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-let notifications = [
-  { id: 1, message: "Jummah prayer at 1:30 PM", date: "2025-10-18" },
-  { id: 2, message: "Maintenance work scheduled for Sunday", date: "2025-10-17" },
-]
+let notifications: any[] = []
+
+if (typeof window !== "undefined") {
+  const stored = localStorage.getItem("masjid_notifications")
+  if (stored) {
+    notifications = JSON.parse(stored)
+  }
+}
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   const id = Number.parseInt(params.id)
   notifications = notifications.filter((n) => n.id !== id)
+
+  if (typeof window !== "undefined") {
+    localStorage.setItem("masjid_notifications", JSON.stringify(notifications))
+  }
+
   return NextResponse.json({ success: true })
 }
