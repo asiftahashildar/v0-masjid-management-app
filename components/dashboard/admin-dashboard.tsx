@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import FinanceSection from "@/components/sections/finance-section"
@@ -10,7 +10,7 @@ import AssetsSection from "@/components/sections/assets-section"
 import CommitteeSection from "@/components/sections/committee-section"
 import NotificationsSection from "@/components/sections/notifications-section"
 import NamazTimingsSection from "@/components/sections/namaz-timings-section"
-import { financeAPI, chandaAPI, committeeAPI, jummaAPI } from "@/lib/api-client"
+import { useAppSelector } from "@/lib/hooks"
 
 interface AdminDashboardProps {
   onLogout: () => void
@@ -18,14 +18,13 @@ interface AdminDashboardProps {
 
 export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState("overview")
-  const [stats, setStats] = useState({
-    totalBalance: 0,
-    totalChanda: 0,
-    totalJummaChanda: 0,
-    totalExpenses: 0,
-    committeeMembers: 0,
-  })
-  const [loading, setLoading] = useState(true)
+
+  const expenses = useAppSelector((state) => state.finance.expenses)
+  const totalBalance = useAppSelector((state) => state.finance.totalBalance)
+  const contributors = useAppSelector((state) => state.chanda.contributors)
+  const jummaChanda = useAppSelector((state) => state.jumma.jummaChanda)
+  const committee = useAppSelector((state) => state.committee)
+  const assets = useAppSelector((state) => state.assets.assets)
 
   const tabs = [
     { id: "overview", label: "Overview", icon: "📊" },
@@ -38,36 +37,17 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
     { id: "namaz", label: "Namaz Timings", icon: "⏰" },
   ]
 
-  useEffect(() => {
-    loadStats()
-  }, [])
+  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
+  const totalChandaAmount = contributors.reduce((sum, c) => sum + c.amount, 0)
+  const totalJummaAmount = jummaChanda.reduce((sum, j) => sum + j.amount, 0)
+  const calculatedBalance = totalBalance + totalChandaAmount + totalJummaAmount - totalExpenses
 
-  const loadStats = async () => {
-    try {
-      setLoading(true)
-      const [expenses, contributors, jummaChanda, committee] = await Promise.all([
-        financeAPI.getExpenses(),
-        chandaAPI.getContributors(),
-        jummaAPI.getJummaChanda(),
-        committeeAPI.getMembers(),
-      ])
-
-      const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
-      const totalChanda = contributors.reduce((sum, c) => sum + c.amount, 0)
-      const totalJummaChanda = jummaChanda.reduce((sum, j) => sum + j.amount, 0)
-
-      setStats({
-        totalBalance: 0,
-        totalChanda,
-        totalJummaChanda,
-        totalExpenses,
-        committeeMembers: committee.members?.length || 0,
-      })
-    } catch (err) {
-      console.error("Failed to load stats:", err)
-    } finally {
-      setLoading(false)
-    }
+  const stats = {
+    totalBalance: calculatedBalance,
+    totalChanda: totalChandaAmount,
+    totalJummaChanda: totalJummaAmount,
+    totalExpenses,
+    committeeMembers: committee.members?.length || 0,
   }
 
   return (
@@ -114,7 +94,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
       {/* Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {activeTab === "overview" && <OverviewSection stats={stats} loading={loading} />}
+        {activeTab === "overview" && <OverviewSection stats={stats} />}
         {activeTab === "finance" && <FinanceSection />}
         {activeTab === "chanda" && <ChandaSection />}
         {activeTab === "jumma" && <JummaChanda />}
@@ -127,9 +107,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
   )
 }
 
-function OverviewSection({ stats, loading }: { stats: any; loading: boolean }) {
-  if (loading) return <div className="text-center py-8">Loading...</div>
-
+function OverviewSection({ stats }: { stats: any }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
       <Card className="p-6">

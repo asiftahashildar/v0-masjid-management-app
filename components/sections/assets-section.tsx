@@ -1,75 +1,60 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { assetsAPI } from "@/lib/api-client"
+import { useAppDispatch, useAppSelector } from "@/lib/hooks"
+import { addAsset, deleteAsset } from "@/lib/slices/assetsSlice"
 
 export default function AssetsSection() {
-  const [assets, setAssets] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
+  const dispatch = useAppDispatch()
+  const assets = useAppSelector((state) => state.assets.assets)
 
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
   const [newAsset, setNewAsset] = useState({
     name: "",
     quantity: "",
     category: "",
   })
 
-  useEffect(() => {
-    loadAssets()
-  }, [])
-
-  const loadAssets = async () => {
-    try {
-      setLoading(true)
-      const data = await assetsAPI.getAssets()
-      setAssets(data)
-      setError("")
-    } catch (err) {
-      setError("Failed to load assets")
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleAddAsset = async () => {
+  const handleAddAsset = () => {
     if (!newAsset.name || !newAsset.quantity || !newAsset.category) {
       setError("Please fill in all fields")
       return
     }
 
     try {
-      await assetsAPI.addAsset({
-        name: newAsset.name,
-        quantity: Number.parseInt(newAsset.quantity),
-        category: newAsset.category,
-      })
+      dispatch(
+        addAsset({
+          name: newAsset.name,
+          category: newAsset.category,
+          quantity: Number.parseInt(newAsset.quantity),
+        }),
+      )
       setNewAsset({ name: "", quantity: "", category: "" })
-      await loadAssets()
       setError("")
+      setSuccess("Asset added successfully")
+      setTimeout(() => setSuccess(""), 3000)
     } catch (err) {
       setError("Failed to add asset")
-      console.error(err)
     }
   }
 
-  const handleDeleteAsset = async (id: number) => {
+  const handleDeleteAsset = (id: number) => {
     try {
-      await assetsAPI.deleteAsset(id)
-      await loadAssets()
+      dispatch(deleteAsset(id))
+      setSuccess("Asset deleted successfully")
+      setTimeout(() => setSuccess(""), 3000)
     } catch (err) {
       setError("Failed to delete asset")
-      console.error(err)
     }
   }
-
-  if (loading) return <div className="text-center py-8">Loading...</div>
 
   return (
     <div className="space-y-6">
       {error && <div className="bg-red-100 text-red-700 p-4 rounded-lg">{error}</div>}
+      {success && <div className="bg-green-100 text-green-700 p-4 rounded-lg">{success}</div>}
 
       <Card className="p-6">
         <h3 className="text-lg font-semibold text-neutral-dark mb-6">Add New Asset</h3>

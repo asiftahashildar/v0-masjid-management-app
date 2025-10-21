@@ -1,115 +1,64 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { committeeAPI } from "@/lib/api-client"
+import { useAppDispatch, useAppSelector } from "@/lib/hooks"
+import { setLeader, setAccountant, addMember, deleteMember } from "@/lib/slices/committeeSlice"
 
 export default function CommitteeSection() {
-  const [committee, setCommittee] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const dispatch = useAppDispatch()
+  const committee = useAppSelector((state) => state.committee)
+
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
-
-  const [leader, setLeader] = useState("")
-  const [accountant, setAccountant] = useState("")
-
-  const [members, setMembers] = useState<string[]>([])
+  const [leader, setLeaderInput] = useState(committee.leader)
+  const [accountant, setAccountantInput] = useState(committee.accountant)
   const [newMemberInput, setNewMemberInput] = useState("")
 
-  useEffect(() => {
-    loadCommittee()
-  }, [])
-
-  const loadCommittee = async () => {
-    try {
-      setLoading(true)
-      const data = await committeeAPI.getMembers()
-      setCommittee(data)
-      setLeader(data.leader || "")
-      setAccountant(data.accountant || "")
-      setMembers(data.members || [])
-      setError("")
-    } catch (err) {
-      setError("Failed to load committee data")
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleUpdateLeader = async () => {
+  const handleUpdateLeader = () => {
     if (!leader.trim()) {
       setError("Please enter leader name")
       return
     }
-    try {
-      await committeeAPI.updateMembers({ ...committee, leader, members })
-      await loadCommittee()
-      setError("")
-      setSuccess("Leader updated successfully")
-      setTimeout(() => setSuccess(""), 3000)
-    } catch (err) {
-      setError("Failed to update leader")
-      console.error(err)
-    }
+    dispatch(setLeader(leader))
+    setError("")
+    setSuccess("Leader updated successfully")
+    setTimeout(() => setSuccess(""), 3000)
   }
 
-  const handleUpdateAccountant = async () => {
+  const handleUpdateAccountant = () => {
     if (!accountant.trim()) {
       setError("Please enter accountant name")
       return
     }
-    try {
-      await committeeAPI.updateMembers({ ...committee, accountant, members })
-      await loadCommittee()
-      setError("")
-      setSuccess("Accountant updated successfully")
-      setTimeout(() => setSuccess(""), 3000)
-    } catch (err) {
-      setError("Failed to update accountant")
-      console.error(err)
-    }
+    dispatch(setAccountant(accountant))
+    setError("")
+    setSuccess("Accountant updated successfully")
+    setTimeout(() => setSuccess(""), 3000)
   }
 
-  const handleAddMember = async () => {
+  const handleAddMember = () => {
     if (!newMemberInput.trim()) {
       setError("Please enter member name")
       return
     }
-    if (members.includes(newMemberInput)) {
+    if (committee.members.some((m) => m.name === newMemberInput)) {
       setError("Member already exists")
       return
     }
-    const updatedMembers = [...members, newMemberInput]
-    setMembers(updatedMembers)
-    try {
-      await committeeAPI.updateMembers({ ...committee, leader, accountant, members: updatedMembers })
-      setNewMemberInput("")
-      setError("")
-      setSuccess("Member added successfully")
-      setTimeout(() => setSuccess(""), 3000)
-    } catch (err) {
-      setError("Failed to add member")
-      console.error(err)
-    }
+    dispatch(addMember({ name: newMemberInput, role: "Member" }))
+    setNewMemberInput("")
+    setError("")
+    setSuccess("Member added successfully")
+    setTimeout(() => setSuccess(""), 3000)
   }
 
-  const handleRemoveMember = async (memberToRemove: string) => {
-    const updatedMembers = members.filter((m) => m !== memberToRemove)
-    setMembers(updatedMembers)
-    try {
-      await committeeAPI.updateMembers({ ...committee, leader, accountant, members: updatedMembers })
-      setError("")
-      setSuccess("Member removed successfully")
-      setTimeout(() => setSuccess(""), 3000)
-    } catch (err) {
-      setError("Failed to remove member")
-      console.error(err)
-    }
+  const handleRemoveMember = (id: number) => {
+    dispatch(deleteMember(id))
+    setSuccess("Member removed successfully")
+    setTimeout(() => setSuccess(""), 3000)
   }
-
-  if (loading) return <div className="text-center py-8">Loading...</div>
 
   return (
     <div className="space-y-6">
@@ -123,7 +72,7 @@ export default function CommitteeSection() {
             <input
               type="text"
               value={leader}
-              onChange={(e) => setLeader(e.target.value)}
+              onChange={(e) => setLeaderInput(e.target.value)}
               placeholder="Enter leader name"
               className="w-full px-4 py-2 border border-neutral-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             />
@@ -142,7 +91,7 @@ export default function CommitteeSection() {
             <input
               type="text"
               value={accountant}
-              onChange={(e) => setAccountant(e.target.value)}
+              onChange={(e) => setAccountantInput(e.target.value)}
               placeholder="Enter accountant name"
               className="w-full px-4 py-2 border border-neutral-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             />
@@ -176,18 +125,22 @@ export default function CommitteeSection() {
       </Card>
 
       <Card className="p-6">
-        <h3 className="text-lg font-semibold text-neutral-dark mb-4">Committee Members ({members.length})</h3>
-        {members.length === 0 ? (
+        <h3 className="text-lg font-semibold text-neutral-dark mb-4">Committee Members ({committee.members.length})</h3>
+        {committee.members.length === 0 ? (
           <p className="text-neutral-dark/60 text-center py-8">No committee members added yet</p>
         ) : (
           <div className="space-y-3">
-            {members.map((member, index) => (
-              <div key={index} className="flex items-center justify-between p-4 bg-neutral-light rounded-lg border border-neutral-light">
+            {committee.members.map((member) => (
+              <div
+                key={member.id}
+                className="flex items-center justify-between p-4 bg-neutral-light rounded-lg border border-neutral-light"
+              >
                 <div>
-                  <p className="font-semibold text-neutral-dark">{member}</p>
+                  <p className="font-semibold text-neutral-dark">{member.name}</p>
+                  <p className="text-sm text-neutral-dark/60">{member.role}</p>
                 </div>
                 <button
-                  onClick={() => handleRemoveMember(member)}
+                  onClick={() => handleRemoveMember(member.id)}
                   className="text-error hover:text-red-700 text-sm font-medium"
                 >
                   Remove

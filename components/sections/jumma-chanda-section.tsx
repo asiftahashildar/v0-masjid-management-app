@@ -1,99 +1,79 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { jummaAPI } from "@/lib/api-client"
+import { useAppDispatch, useAppSelector } from "@/lib/hooks"
+import { addJummaChanda, deleteJummaChanda } from "@/lib/slices/jummaSlice"
+
+const monthNames = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+]
 
 export default function JummaChanda() {
-  const [jummaChanda, setJummaChanda] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const dispatch = useAppDispatch()
+  const jummaChanda = useAppSelector((state) => state.jumma.jummaChanda)
+
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
-
   const [newJumma, setNewJumma] = useState({
     amount: "",
-    weekNumber: "",
+    week: "",
     month: new Date().getMonth() + 1,
     year: new Date().getFullYear(),
   })
 
-  useEffect(() => {
-    loadJummaChanda()
-  }, [])
-
-  const loadJummaChanda = async () => {
-    try {
-      setLoading(true)
-      const data = await jummaAPI.getJummaChanda()
-      setJummaChanda(data)
-      setError("")
-    } catch (err) {
-      setError("Failed to load Jumma Chanda data")
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleAddJummaChanda = async () => {
-    if (!newJumma.amount || !newJumma.weekNumber) {
+  const handleAddJummaChanda = () => {
+    if (!newJumma.amount || !newJumma.week) {
       setError("Please fill in all fields")
       return
     }
 
     try {
-      await jummaAPI.addJummaChanda({
-        amount: Number.parseFloat(newJumma.amount),
-        weekNumber: Number.parseInt(newJumma.weekNumber),
-        month: newJumma.month,
-        year: newJumma.year,
-      })
+      dispatch(
+        addJummaChanda({
+          week: Number.parseInt(newJumma.week),
+          month: monthNames[newJumma.month - 1],
+          year: newJumma.year,
+          amount: Number.parseFloat(newJumma.amount),
+        }),
+      )
       setNewJumma({
         amount: "",
-        weekNumber: "",
+        week: "",
         month: new Date().getMonth() + 1,
         year: new Date().getFullYear(),
       })
-      await loadJummaChanda()
       setError("")
       setSuccess("Jumma Chanda recorded successfully")
       setTimeout(() => setSuccess(""), 3000)
     } catch (err) {
       setError("Failed to add Jumma Chanda")
-      console.error(err)
     }
   }
 
-  const handleDeleteJummaChanda = async (id: number) => {
+  const handleDeleteJummaChanda = (id: number) => {
     try {
-      await jummaAPI.deleteJummaChanda(id)
-      await loadJummaChanda()
+      dispatch(deleteJummaChanda(id))
       setSuccess("Jumma Chanda deleted successfully")
       setTimeout(() => setSuccess(""), 3000)
     } catch (err) {
       setError("Failed to delete Jumma Chanda")
-      console.error(err)
     }
   }
 
-  if (loading) return <div className="text-center py-8">Loading...</div>
-
   const totalJummaChanda = jummaChanda.reduce((sum, j) => sum + j.amount, 0)
-  const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ]
 
   // Group by month and year
   const groupedByMonth = jummaChanda.reduce(
@@ -143,8 +123,8 @@ export default function JummaChanda() {
           <input
             type="number"
             placeholder="Week Number (1-4)"
-            value={newJumma.weekNumber}
-            onChange={(e) => setNewJumma({ ...newJumma, weekNumber: e.target.value })}
+            value={newJumma.week}
+            onChange={(e) => setNewJumma({ ...newJumma, week: e.target.value })}
             className="px-4 py-2 border border-neutral-light rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
             min="1"
             max="4"
@@ -185,18 +165,18 @@ export default function JummaChanda() {
 
       {Object.entries(groupedByMonth)
         .sort(([keyA], [keyB]) => {
-          const [monthA, yearA] = keyA.split("-").map(Number)
-          const [monthB, yearB] = keyB.split("-").map(Number)
-          return yearB - yearA || monthB - monthA
+          const [monthA, yearA] = keyA.split("-")
+          const [monthB, yearB] = keyB.split("-")
+          return Number(yearB) - Number(yearA) || monthNames.indexOf(monthB) - monthNames.indexOf(monthA)
         })
         .map(([key, items]) => {
-          const [month, year] = key.split("-").map(Number)
+          const [month, year] = key.split("-")
           const monthTotal = items.reduce((sum, item) => sum + item.amount, 0)
 
           return (
             <Card key={key} className="p-6">
               <h3 className="text-lg font-semibold text-neutral-dark mb-4">
-                {monthNames[month - 1]} {year} - Total: ₹{monthTotal.toLocaleString("en-IN")}
+                {month} {year} - Total: ₹{monthTotal.toLocaleString("en-IN")}
               </h3>
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -211,7 +191,7 @@ export default function JummaChanda() {
                   <tbody>
                     {items.map((item) => (
                       <tr key={item.id} className="border-b border-neutral-light hover:bg-neutral-light/50">
-                        <td className="py-3 px-4 text-neutral-dark font-medium">Week {item.weekNumber}</td>
+                        <td className="py-3 px-4 text-neutral-dark font-medium">Week {item.week}</td>
                         <td className="py-3 px-4 font-semibold text-accent">₹{item.amount.toLocaleString("en-IN")}</td>
                         <td className="py-3 px-4 text-neutral-dark/60">{item.date}</td>
                         <td className="py-3 px-4">
